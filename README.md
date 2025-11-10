@@ -11,8 +11,8 @@ Think of RabbitMQ like a group chat where everyone is terrible at listening.
 
 Flow:
 Producer (sends meme) → Exchange (admin checks which group cares) → Queue (messages waiting) → Consumer (someone finally sees it and responds with 😂)
-
 If someone in the Family Chat is busy (Consumer offline), the memes pile up in that chat (messages wait in the queue). If many cousins are online, RabbitMQ spreads the memes across them so no one cousin gets spammed too hard.
+
 --------------------------------------------------------------
 It includes:
 - Producer → publishes “OrderCreated” messages
