@@ -1,103 +1,133 @@
 # RabbitMQ Demo in .NET (Producer + Consumer)
 
-This project demonstrates how to use RabbitMQ from .NET console applications.
+This project demonstrates how to send and receive messages using RabbitMQ from .NET console applications.
+
 It includes:
-- Producer (publishes messages)
-- Consumer (receives messages)
-- docker-compose.yml to run RabbitMQ locally
+- Producer → publishes “OrderCreated” messages
+- Consumer → receives and processes them
+- docker-compose.yml → runs RabbitMQ locally
 
 ------------------------------------------------------------
 Requirements
 ------------------------------------------------------------
 - .NET SDK (6 or 8)
-- Docker Desktop (recommended) OR RabbitMQ installed manually
+- Docker Desktop (recommended) or RabbitMQ installed manually
 
 ------------------------------------------------------------
-Project Structure
+Start RabbitMQ
 ------------------------------------------------------------
-RabbitDemo/
-  Producer/
-    Producer.csproj
-    Program.cs
-  Consumer/
-    Consumer.csproj
-    Program.cs
-  docker-compose.yml
-  README.md
-
-------------------------------------------------------------
-Running RabbitMQ using Docker
-------------------------------------------------------------
-Open a terminal inside the project folder and run:
+Run in project folder:
 
 docker compose up -d
 
-RabbitMQ UI:
+RabbitMQ Management Portal:
 http://localhost:15672
-Username: guest
-Password: guest
+
+Login:
+user: guest
+pass: guest
 
 Ports:
-- AMQP: 5672  (used by .NET apps)
-- UI:   15672
+AMQP: 5672  
+UI  : 15672
 
 ------------------------------------------------------------
-Running the Producer
+RUN THE CONSUMER FIRST
 ------------------------------------------------------------
-The Producer publishes JSON messages to RabbitMQ.
-
-Run:
-dotnet run --project Producer
-
-Type anything and press Enter to send OR press Enter with no input to send a random order.
-
-------------------------------------------------------------
-Running the Consumer
-------------------------------------------------------------
-The Consumer subscribes and processes messages from Queue: demo.queue
-
-Run:
 dotnet run --project Consumer
 
-You should now see messages printed as they are received.
+Expected Consumer output WAITING:
+
+Consumer started. Press Ctrl+C to quit.
+
+(No messages yet until Producer publishes.)
 
 ------------------------------------------------------------
-Message Routing Used
+RUN THE PRODUCER
 ------------------------------------------------------------
-Exchange: demo.exchange  (type: direct)
-Queue:    demo.queue
-Routing Key: orders.created
+dotnet run --project Producer
 
-Flow:
-Producer → Exchange → Queue → Consumer
+The producer prompts for input:
+
+Producer started. Type an order id (or press Enter to send a random one). Ctrl+C to quit.
+> 
 
 ------------------------------------------------------------
-Stopping RabbitMQ
+EXAMPLE: Publishing Orders
+------------------------------------------------------------
+USER INPUT:
+> 1001
+
+Producer OUTPUT:
+Published order: order1001 ($123.99)
+
+USER INPUT:
+> (just press Enter)
+
+Producer OUTPUT:
+Published order: order2222 ($87.99)
+
+Each Enter sends a new order.
+
+------------------------------------------------------------
+EXPECTED CONSUMER OUTPUT WHEN MESSAGES ARRIVE
+------------------------------------------------------------
+
+[x] Received: order1001 $123.99 (at 2025-11-10T03:50:18.223Z)
+[x] Received: order2222 $87.99 (at 2025-11-10T03:50:26.178Z)
+
+Every line = one message the consumer successfully processed and ACKed.
+
+------------------------------------------------------------
+HOW TO VERIFY IN THE RABBITMQ PORTAL
+------------------------------------------------------------
+
+1. Open the UI in browser:
+   http://localhost:15672
+
+2. Go to **"Queues"** tab at the top.
+
+3. Click the Queue:
+   demo.queue
+
+4. You will see:
+   - **Ready**           = messages waiting to be consumed
+   - **Unacked**         = messages delivered but not acknowledged yet
+   - **Total**           = Ready + Unacked
+
+When Consumer is running normally:
+- Messages arrive → appear briefly → get processed → disappear → Ready returns to 0.
+
+If Consumer is **not** running:
+- Messages accumulate in **Ready**.
+
+------------------------------------------------------------
+MESSAGE FLOW (Simple)
+------------------------------------------------------------
+Producer → Exchange: demo.exchange → Queue: demo.queue → Consumer
+
+Routing Key Used:
+orders.created
+
+------------------------------------------------------------
+STOP EVERYTHING
 ------------------------------------------------------------
 docker compose down
 
 ------------------------------------------------------------
-Troubleshooting
+COMMON ISSUES
 ------------------------------------------------------------
-1) Error: cannot connect to RabbitMQ
-   → Ensure Docker Desktop is running
-   → Ensure RabbitMQ container is up (docker ps)
+1) Producer fails to connect:
+   → Ensure docker is running
+   → Ensure container is up:  docker ps
 
-2) Error: open //./pipe/dockerDesktopLinuxEngine
-   → Start Docker Desktop
-   → Ensure WSL2 backend is enabled
+2) Messages stuck in queue:
+   → Run the consumer so messages can be acknowledged
 
-3) Messages stuck in queue
-   → Start Consumer so messages can be acknowledged
-
-------------------------------------------------------------
-Next Enhancements (optional)
-------------------------------------------------------------
-- Add a Dead Letter Queue for failed messages
-- Use a Topic Exchange for pattern routing
-- Add Serilog structured logging
-- Containerize Producer and Consumer
+3) UI not opening:
+   → Ensure port 15672 is free and container running:
+     docker logs rabbitmq-demo
 
 ------------------------------------------------------------
-End
+End of File
 ------------------------------------------------------------
